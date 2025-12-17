@@ -1,6 +1,7 @@
 import pygame
 from MainMenu import MainMenu
 from Game import Game
+from PauseScreen import PauseScreen
 
 def main():
     pygame.init()
@@ -9,6 +10,7 @@ def main():
     clock = pygame.time.Clock()
 
     state = MainMenu(screen)
+    previous_state = None
     running = True
 
     while running:
@@ -28,6 +30,13 @@ def main():
             state = Game(screen)
         elif state.next_state == "MENU" and isinstance(state, Game):
             state = MainMenu(screen)
+        elif state.next_state == "PAUSE" and isinstance(state, Game):
+            previous_state = state
+            state = PauseScreen(screen)
+        #powrot po pauzie
+        elif state.next_state == "GAME" and isinstance(state, PauseScreen):
+            state = previous_state
+            state.next_state = "GAME"
         elif state.next_state == "QUIT":
             running = False
 
