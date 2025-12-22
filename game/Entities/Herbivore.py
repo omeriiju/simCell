@@ -9,13 +9,13 @@ class Herbivore(Entity):
 
         scale = 0.2
         all_frames = []
-        for i in range(4):
+        for i in range(2):
             img = pygame.image.load(f"visuals/phase1/green_{i}.png").convert_alpha()
             w, h = img.get_size()
             img = pygame.transform.smoothscale(img, (int(w * scale), int(h * scale)))
             all_frames.append(img)
 
-        pattern = [0, 1, 0, 1, 0, 1, 0, 1, 2, 3]
+        pattern = [0, 1]
 
         self.frames = [all_frames[i] for i in pattern]
 

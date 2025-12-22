@@ -5,7 +5,7 @@ class Food(pygame.sprite.Sprite):
     def __init__(self, x, y, image_path, allowed_diet):
         super().__init__()
         img = pygame.image.load(image_path).convert_alpha()
-        scale = 0.08
+        scale = 0.07
         w, h = img.get_size()
         self.image = pygame.transform.smoothscale(img, (int(w * scale), int(h * scale)))
 
