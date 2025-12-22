@@ -16,8 +16,8 @@ class Game:
         self.width, self.height = self.screen.get_size()
 
         # background
-        self.bg_image = pygame.image.load("visuals/background.png").convert()
-        zoom = 3.0
+        self.bg_image = pygame.image.load("visuals/background_2.png").convert()
+        zoom = 5.0
         w, h = self.bg_image.get_size()
         self.bg_image = pygame.transform.smoothscale(self.bg_image,(int(w * zoom), int(h * zoom)))
         self.map_width, self.map_height = self.bg_image.get_size()
@@ -36,22 +36,34 @@ class Game:
         # jedzenie
         self.food_group = pygame.sprite.Group()
 
+        spawn_x = random.randint(0, self.map_width)
+        spawn_y = random.randint(0, self.map_height)
+
         if player_type == "Herbivore":
-            self.player = Herbivore(self.width // 2, self.height // 2)
+            self.player = Herbivore(spawn_x, spawn_y)
         else:
-            self.player = Carnivore(self.width // 2, self.height // 2)
+            self.player = Carnivore(spawn_x, spawn_y)
+
         self.all_sprites.add(self.player)
 
-        for _ in range(10):
+        for _ in range(30):
             self.spawn_food_outside_view()
 
         self.speed = 250
 
+        #progess bar
         bar_width = self.width - 40
         bar_height = 20
         bar_x = 20
         bar_y = self.height - bar_height - 20
         self.xp_bar = ProgressBar(bar_x, bar_y, bar_width, bar_height)
+
+        #lvl visuals
+        self.lvl1_image = pygame.image.load("visuals/level_1.png").convert_alpha()
+        self.lvl1_image_rect = self.lvl1_image.get_rect(center=(self.width // 2, self.height // 2 - 200))
+        self.lvl1_show = True
+        self.lvl1_start_time = pygame.time.get_ticks()
+        self.lvl1_duration = 1500
 
     def get_camera_rect(self):
         cam_x = self.player.rect.centerx - self.width // 2
@@ -88,6 +100,11 @@ class Game:
                     self.next_state = "PAUSE"
 
     def update(self, dt):
+        if self.lvl1_show:
+            now = pygame.time.get_ticks()
+            if now - self.lvl1_start_time >= self.lvl1_duration:
+                self.lvl1_show = False
+
         keys = pygame.key.get_pressed()
         self.player.vx = 0
         self.player.vy = 0
@@ -141,3 +158,6 @@ class Game:
         self.screen.blit(self.pause_button_image, self.pause_button_rect)
 
         self.xp_bar.draw(self.screen, self.player.xp, self.player.max_xp)
+
+        if self.lvl1_show:
+            self.screen.blit(self.lvl1_image, self.lvl1_image_rect)
