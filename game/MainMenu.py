@@ -45,7 +45,7 @@ class MainMenu:
                 self.next_state = "QUIT"
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if self.start_rect.collidepoint(event.pos):
-                    self.next_state = "GAME"
+                    self.next_state = "PICKING"
                 if self.quit_rect.collidepoint(event.pos):
                     self.next_state = "QUIT"
 

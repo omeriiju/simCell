@@ -5,6 +5,8 @@ class Carnivore(Entity):
     def __init__(self, x, y):
         super().__init__(x, y, "visuals/phase1/red_0.png")
 
+        self.diet = "carnivore"
+
         scale = 0.2
         all_frames = []
         for i in range(4):

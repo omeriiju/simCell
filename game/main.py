@@ -2,6 +2,7 @@ import pygame
 from MainMenu import MainMenu
 from Game import Game
 from PauseScreen import PauseScreen
+from PickingEatingHabitsScreen import PickingEatingHabitsScreen
 
 def main():
     pygame.init()
@@ -26,8 +27,10 @@ def main():
         state.draw()
         pygame.display.flip()
 
-        if state.next_state == "GAME" and isinstance(state, MainMenu):
-            state = Game(screen)
+        if state.next_state == "PICKING" and isinstance(state, MainMenu):
+            state = PickingEatingHabitsScreen(screen)
+        elif state.next_state == "GAME" and isinstance(state, PickingEatingHabitsScreen):
+            state = Game(screen, state.selected_type)
         elif state.next_state == "MENU" and isinstance(state, Game):
             state = MainMenu(screen)
         elif state.next_state == "PAUSE" and isinstance(state, Game):

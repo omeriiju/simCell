@@ -27,6 +27,11 @@ class Entity(pygame.sprite.Sprite):
         #sekundy na klatke
         self.anim_speed = 0.2
 
+        #eating habits + xp
+        self.xp = 0
+        self.diet = None
+        self.max_xp = 250
+
     def update(self, dt):
         #animacja
         if self.frames is not None:
