@@ -36,14 +36,14 @@ class PickingEatingHabitsScreen:
         # pick
         self.pick_rect = self.pick_image.get_rect(centerx=self.width // 2, bottom=frame_y - 5)
 
-        herbivore_image = pygame.image.load("visuals/phase1/green_0.png").convert_alpha()
+        herbivore_image = pygame.image.load("visuals/phase1/green_1.png").convert_alpha()
         max_width = 350
         orig_w, orig_h = herbivore_image.get_size()
         scale_factor = max_width / orig_w
         new_h = int(orig_h * scale_factor)
         self.herbivore_image = pygame.transform.smoothscale(herbivore_image, (max_width, new_h))
 
-        carnivore_image = pygame.image.load("visuals/phase1/red_0.png").convert_alpha()
+        carnivore_image = pygame.image.load("visuals/phase1/red_1.png").convert_alpha()
         max_width = 350
         orig_w, orig_h = carnivore_image.get_size()
         scale_factor = max_width / orig_w

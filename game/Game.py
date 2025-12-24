@@ -5,7 +5,9 @@ from game.Entities.Herbivore import Herbivore
 import math
 from game.GameLogic.Food import Plant, Meat
 import random
-from game.ProgressBar import ProgressBar
+
+from game.Trackers.HealthBar import HealthBar
+from game.Trackers.ProgressBar import ProgressBar
 
 def food_collision(player, food):
     return player.rect.colliderect(food.hitbox)
@@ -58,9 +60,27 @@ class Game:
         bar_y = self.height - bar_height - 20
         self.xp_bar = ProgressBar(bar_x, bar_y, bar_width, bar_height)
 
-        #lvl visuals
-        self.lvl1_image = pygame.image.load("visuals/level_1.png").convert_alpha()
-        self.lvl1_image_rect = self.lvl1_image.get_rect(center=(self.width // 2, self.height // 2 - 200))
+        #hp
+        hp_bar_width = 400
+        hp_bar_height = 20
+        hp_bar_x = self.width - hp_bar_width - 20
+        hp_bar_y = 20
+        self.hp_bar = HealthBar(hp_bar_x, hp_bar_y, hp_bar_width, hp_bar_height)
+
+        # lvl visuals
+        self.current_level = 1
+        self.level_up_show = False
+        self.level_up_start_time = 0
+        self.level_up_duration = 1500
+
+        self.lvl_images = {
+            1: pygame.image.load("visuals/level_1.png").convert_alpha(),
+            2: pygame.image.load("visuals/level_2.png").convert_alpha(),
+            3: pygame.image.load("visuals/level_3.png").convert_alpha(),
+            4: pygame.image.load("visuals/level_4.png").convert_alpha(),
+        }
+
+        #lvl 1 at the beginning
         self.lvl1_show = True
         self.lvl1_start_time = pygame.time.get_ticks()
         self.lvl1_duration = 1500
@@ -88,7 +108,6 @@ class Game:
             food = Meat(x, y)
         self.food_group.add(food)
 
-
     def handle_events(self, events):
         for event in events:
             if event.type == pygame.QUIT:
@@ -100,6 +119,11 @@ class Game:
                     self.next_state = "PAUSE"
 
     def update(self, dt):
+        if self.level_up_show:
+            now = pygame.time.get_ticks()
+            if now - self.level_up_start_time >= self.level_up_duration:
+                self.level_up_show = False
+
         if self.lvl1_show:
             now = pygame.time.get_ticks()
             if now - self.lvl1_start_time >= self.lvl1_duration:
@@ -132,11 +156,32 @@ class Game:
 
         hits = pygame.sprite.spritecollide(
             self.player, self.food_group, dokill=False, collided=food_collision)
+
         for food in hits:
             if food.allowed_diet == self.player.diet:
+                old_level = self.player.get_level()
                 self.player.xp += 1
+                new_level = self.player.get_level()
+
+                # is new level acquired
+                if new_level > old_level:
+                    self.current_level = new_level
+                    self.level_up_show = True
+                    self.level_up_start_time = pygame.time.get_ticks()
+
+                    # hp increase
+                    self.player.max_health += 50
+                    self.player.health += 50
+
+                if new_level == 5:
+                    self.next_state = "END"
+
+                food_type = type(food)
                 self.food_group.remove(food)
-                self.spawn_food_outside_view()
+
+                x, y = self.random_pos_outside_camera()
+                new_food = food_type(x, y)
+                self.food_group.add(new_food)
 
     def draw(self):
         cam_x = self.player.rect.centerx - self.width // 2
@@ -159,5 +204,18 @@ class Game:
 
         self.xp_bar.draw(self.screen, self.player.xp, self.player.max_xp)
 
+        self.hp_bar.draw(self.screen, self.player.health, self.player.max_health)
+
         if self.lvl1_show:
-            self.screen.blit(self.lvl1_image, self.lvl1_image_rect)
+            lvl_rect = self.lvl_images[1].get_rect(center=(self.width // 2, self.height // 2 - 200))
+            self.screen.blit(self.lvl_images[1], lvl_rect)
+
+        if self.level_up_show and self.current_level in self.lvl_images:
+            lvl_rect = self.lvl_images[self.current_level].get_rect(center=(self.width // 2, self.height // 2 - 200))
+            self.screen.blit(self.lvl_images[self.current_level], lvl_rect)
+
+        # current lvl
+        font = pygame.font.SysFont('georgia', 20, bold=True)
+        level_text = font.render(f"Level {self.player.get_level()}", True, (200, 200, 200))
+        level_rect = level_text.get_rect(topleft=(20, self.height - 70))
+        self.screen.blit(level_text, level_rect)

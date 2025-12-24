@@ -31,6 +31,25 @@ class Entity(pygame.sprite.Sprite):
         self.xp = 0
         self.diet = None
         self.max_xp = 250
+        self.level = 1
+
+        #health
+        self.health = 200
+        self.max_health = 200
+
+    def get_level(self):
+        if self.xp >= 250:
+            #the end
+            return 5
+        elif self.xp >= 150:
+            return 4
+        elif self.xp >= 70:
+            return 3
+        elif self.xp >= 20:
+            return 2
+        else:
+            #begining of the game
+            return 1
 
     def update(self, dt):
         #animacja
