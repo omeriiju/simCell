@@ -50,7 +50,6 @@ class MainMenu:
                     self.next_state = "QUIT"
 
     def update(self, dt):
-        #animacje w menu?
         pass
 
     def draw(self):

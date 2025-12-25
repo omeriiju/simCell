@@ -1,4 +1,3 @@
-# PauseScreen.py
 import pygame
 
 class PauseScreen:

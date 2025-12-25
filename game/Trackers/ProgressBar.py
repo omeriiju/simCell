@@ -33,7 +33,7 @@ class ProgressBar:
 
         #lines indicating level-up
         inner_width = self.width - 2 * padding
-        for threshold in self.level_thresholds[:-1]:  # Nie rysuj linii na końcu (250)
+        for threshold in self.level_thresholds[:-1]:
             threshold_ratio = threshold / max_xp
             line_x = self.x + padding + int(inner_width * threshold_ratio)
 

@@ -3,7 +3,16 @@ import pygame
 from game.Entities.Carnivore import Carnivore
 from game.Entities.Herbivore import Herbivore
 import math
+
 from game.GameLogic.Food import Plant, Meat
+from game.GameLogic.Food_spawner import spawn_food_outside_view
+
+from game.Entities.NPCHerbivore import NPCHerbivore
+from game.Entities.NPCCarnivore import NPCCarnivore
+
+from game.GameLogic.XP import add_xp
+from game.GameLogic.NPC_spawner import spawn_npc_outside_view
+
 import random
 
 from game.Trackers.HealthBar import HealthBar
@@ -17,6 +26,7 @@ class Game:
         self.screen = screen
         self.width, self.height = self.screen.get_size()
 
+        #visuals ===============================================
         # background
         self.bg_image = pygame.image.load("visuals/background_2.png").convert()
         zoom = 5.0
@@ -32,9 +42,13 @@ class Game:
         self.pause_button_rect = self.pause_button_image.get_rect(topleft=(20, 20))
 
         self.next_state = "GAME"
+        #========================================================
 
         # player variant
         self.all_sprites = pygame.sprite.Group()
+
+        self.npc_group = pygame.sprite.Group()
+
         # jedzenie
         self.food_group = pygame.sprite.Group()
 
@@ -48,11 +62,26 @@ class Game:
 
         self.all_sprites.add(self.player)
 
-        for _ in range(30):
-            self.spawn_food_outside_view()
+        for _ in range(50):
+            spawn_food_outside_view(self, Plant)
+
+        for _ in range(50):
+            spawn_food_outside_view(self, Meat)
 
         self.speed = 250
 
+        #NPCs spawn
+        for _ in range(25):
+            spawn_npc_outside_view(self)
+
+        for _ in range(25):
+            spawn_npc_outside_view(self, NPCCarnivore)
+
+        self.attack_cooldown = 300
+        self.last_attack_time = 0
+        self.knockback = 50
+
+        #========================================================
         #progess bar
         bar_width = self.width - 40
         bar_height = 20
@@ -84,29 +113,8 @@ class Game:
         self.lvl1_show = True
         self.lvl1_start_time = pygame.time.get_ticks()
         self.lvl1_duration = 1500
+        # ========================================================
 
-    def get_camera_rect(self):
-        cam_x = self.player.rect.centerx - self.width // 2
-        cam_y = self.player.rect.centery - self.height // 2
-        cam_x = max(0, min(cam_x, self.map_width - self.width))
-        cam_y = max(0, min(cam_y, self.map_height - self.height))
-        return pygame.Rect(cam_x, cam_y, self.width, self.height)
-
-    def random_pos_outside_camera(self):
-        camera_rect = self.get_camera_rect()
-        while True:
-            x = random.randint(0, self.map_width)
-            y = random.randint(0, self.map_height)
-            if not camera_rect.collidepoint(x, y):
-                return x, y
-
-    def spawn_food_outside_view(self):
-        x, y = self.random_pos_outside_camera()
-        if random.random() < 0.5:
-            food = Plant(x, y)
-        else:
-            food = Meat(x, y)
-        self.food_group.add(food)
 
     def handle_events(self, events):
         for event in events:
@@ -151,7 +159,16 @@ class Game:
             self.player.vx = 0
             self.player.vy = 0
 
-        self.all_sprites.update(dt)
+        self.player.update(dt)
+
+        for sprite in self.all_sprites:
+            if isinstance(sprite, NPCHerbivore):
+                sprite.update(dt, self.food_group, self.world_rect, self.player, self)
+            elif isinstance(sprite, NPCCarnivore):
+                sprite.update(dt, self.food_group, self.world_rect, self.player, self.npc_group, self)
+            elif sprite is not self.player:
+                sprite.update(dt)
+
         self.player.rect.clamp_ip(self.world_rect)
 
         hits = pygame.sprite.spritecollide(
@@ -159,29 +176,132 @@ class Game:
 
         for food in hits:
             if food.allowed_diet == self.player.diet:
-                old_level = self.player.get_level()
-                self.player.xp += 1
-                new_level = self.player.get_level()
+                add_xp(self, 1)
 
-                # is new level acquired
-                if new_level > old_level:
-                    self.current_level = new_level
-                    self.level_up_show = True
-                    self.level_up_start_time = pygame.time.get_ticks()
-
-                    # hp increase
-                    self.player.max_health += 50
-                    self.player.health += 50
-
-                if new_level == 5:
-                    self.next_state = "END"
+                if self.player.health < self.player.max_health:
+                    self.player.health = min(self.player.health + 10,self.player.max_health)
 
                 food_type = type(food)
                 self.food_group.remove(food)
+                spawn_food_outside_view(self, food_type)
 
-                x, y = self.random_pos_outside_camera()
-                new_food = food_type(x, y)
-                self.food_group.add(new_food)
+        now = pygame.time.get_ticks()
+
+        for npc_carn in list(self.npc_group):
+            if not isinstance(npc_carn, NPCCarnivore):
+                continue
+
+            if now - npc_carn.last_attack_time < npc_carn.attack_cooldown:
+                continue
+
+            victims = []
+
+            for npc in self.npc_group:
+                if isinstance(npc, NPCHerbivore):
+                    victims.append(npc)
+
+            npc_hitbox = npc_carn.rect.inflate(
+                -npc_carn.rect.width * 0.1,
+                -npc_carn.rect.height * 0.1
+            )
+
+            for victim in victims:
+                victim_hitbox = victim.rect.inflate(
+                    -victim.rect.width * 0.1,
+                    -victim.rect.height * 0.1
+                )
+
+                if npc_hitbox.colliderect(victim_hitbox):
+                    if hasattr(victim, "health") and victim.health > 0:
+                        npc_carn.last_attack_time = now
+                        victim.health -= npc_carn.attack_damage
+
+                        dx = victim.rect.centerx - npc_carn.rect.centerx
+                        dy = victim.rect.centery - npc_carn.rect.centery
+                        dist = math.hypot(dx, dy)
+                        if dist > 0:
+                            dx /= dist
+                            dy /= dist
+                            victim.rect.x += dx * self.knockback
+                            victim.rect.y += dy * self.knockback
+                            victim.rect.clamp_ip(self.world_rect)
+
+                        if isinstance(victim, NPCHerbivore) and victim.health <= 0:
+                            self.npc_group.remove(victim)
+                            self.all_sprites.remove(victim)
+                            spawn_npc_outside_view(self)
+                    break
+
+        now = pygame.time.get_ticks()
+
+        player_hitbox = self.player.rect.inflate(
+            -self.player.rect.width * 0.1,
+            -self.player.rect.height * 0.1
+        )
+
+        biting_npcs = []
+        for npc_carn in self.npc_group:
+            if isinstance(npc_carn, NPCCarnivore):
+                npc_hitbox = npc_carn.rect.inflate(
+                    -npc_carn.rect.width * 0.1,
+                    -npc_carn.rect.height * 0.1
+                )
+                if player_hitbox.colliderect(npc_hitbox):
+                    biting_npcs.append(npc_carn)
+
+        can_player_bite = (
+                isinstance(self.player, Carnivore) and
+                now - self.last_attack_time >= self.attack_cooldown and
+                len(biting_npcs) > 0
+        )
+
+        can_npc_bite = any(
+            now - npc.last_attack_time >= npc.attack_cooldown
+            for npc in biting_npcs
+        )
+
+        if can_player_bite:
+            self.last_attack_time = now
+            enemy = biting_npcs[0]
+            if hasattr(enemy, "health") and enemy.health > 0:
+                enemy.health -= self.player.attack_damage
+
+                dx = enemy.rect.centerx - self.player.rect.centerx
+                dy = enemy.rect.centery - self.player.rect.centery
+                dist = math.hypot(dx, dy)
+                if dist > 0:
+                    dx /= dist
+                    dy /= dist
+                    enemy.rect.x += dx * self.knockback
+                    enemy.rect.y += dy * self.knockback
+                    enemy.rect.clamp_ip(self.world_rect)
+
+                if enemy.health <= 0:
+                    add_xp(self, 3)
+                    self.npc_group.remove(enemy)
+                    self.all_sprites.remove(enemy)
+                    spawn_npc_outside_view(self)
+
+
+        elif can_npc_bite:
+            npc = next(n for n in biting_npcs if now - n.last_attack_time >= n.attack_cooldown)
+            npc.last_attack_time = now
+            if self.player.health > 0:
+                self.player.health -= npc.attack_damage
+
+                dx = self.player.rect.centerx - npc.rect.centerx
+                dy = self.player.rect.centery - npc.rect.centery
+                dist = math.hypot(dx, dy)
+                if dist > 0:
+                    dx /= dist
+                    dy /= dist
+                    self.player.rect.x += dx * self.knockback
+                    self.player.rect.y += dy * self.knockback
+                    self.player.rect.clamp_ip(self.world_rect)
+
+                if self.player.health <= 0:
+                    self.next_state = "END"
+
 
     def draw(self):
         cam_x = self.player.rect.centerx - self.width // 2

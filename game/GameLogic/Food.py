@@ -1,6 +1,5 @@
 import pygame
 
-
 class Food(pygame.sprite.Sprite):
     def __init__(self, x, y, image_path, allowed_diet):
         super().__init__()

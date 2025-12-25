@@ -3,6 +3,7 @@ from MainMenu import MainMenu
 from Game import Game
 from PauseScreen import PauseScreen
 from PickingEatingHabitsScreen import PickingEatingHabitsScreen
+from EndScreen import EndScreen
 
 def main():
     pygame.init()
@@ -40,6 +41,8 @@ def main():
         elif state.next_state == "GAME" and isinstance(state, PauseScreen):
             state = previous_state
             state.next_state = "GAME"
+        elif state.next_state == "END" and isinstance(state, Game):
+            state = EndScreen(screen)
         elif state.next_state == "QUIT":
             running = False
 

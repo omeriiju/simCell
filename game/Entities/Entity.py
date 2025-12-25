@@ -36,6 +36,7 @@ class Entity(pygame.sprite.Sprite):
         #health
         self.health = 200
         self.max_health = 200
+        self.attack_damage = 100
 
     def get_level(self):
         if self.xp >= 250:
