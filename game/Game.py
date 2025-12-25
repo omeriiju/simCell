@@ -239,30 +239,34 @@ class Game:
             -self.player.rect.height * 0.1
         )
 
-        biting_npcs = []
-        for npc_carn in self.npc_group:
-            if isinstance(npc_carn, NPCCarnivore):
-                npc_hitbox = npc_carn.rect.inflate(
-                    -npc_carn.rect.width * 0.1,
-                    -npc_carn.rect.height * 0.1
-                )
-                if player_hitbox.colliderect(npc_hitbox):
-                    biting_npcs.append(npc_carn)
+        bite_targets = []
+        biting_carnivores = []
+
+        for npc in self.npc_group:
+            npc_hitbox = npc.rect.inflate(
+                -npc.rect.width * 0.1,
+                -npc.rect.height * 0.1
+            )
+            if player_hitbox.colliderect(npc_hitbox):
+                if hasattr(npc, "health") and npc.health > 0:
+                    bite_targets.append(npc)
+                if isinstance(npc, NPCCarnivore):
+                    biting_carnivores.append(npc)
 
         can_player_bite = (
                 isinstance(self.player, Carnivore) and
                 now - self.last_attack_time >= self.attack_cooldown and
-                len(biting_npcs) > 0
+                len(bite_targets) > 0
         )
 
         can_npc_bite = any(
             now - npc.last_attack_time >= npc.attack_cooldown
-            for npc in biting_npcs
+            for npc in biting_carnivores
         )
 
         if can_player_bite:
             self.last_attack_time = now
-            enemy = biting_npcs[0]
+            enemy = bite_targets[0]
             if hasattr(enemy, "health") and enemy.health > 0:
                 enemy.health -= self.player.attack_damage
 
@@ -284,7 +288,7 @@ class Game:
 
 
         elif can_npc_bite:
-            npc = next(n for n in biting_npcs if now - n.last_attack_time >= n.attack_cooldown)
+            npc = next(n for n in biting_carnivores if now - n.last_attack_time >= n.attack_cooldown)
             npc.last_attack_time = now
             if self.player.health > 0:
                 self.player.health -= npc.attack_damage
