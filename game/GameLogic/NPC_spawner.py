@@ -14,8 +14,6 @@ def spawn_npc_outside_view(game, npc_type=None):
 
     if npc_type is None:
         npc_type = NPCHerbivore
-    else:
-        npc_type = NPCCarnivore
 
     npc = npc_type(x,y)
     game.all_sprites.add(npc)

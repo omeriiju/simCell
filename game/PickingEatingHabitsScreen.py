@@ -51,7 +51,7 @@ class PickingEatingHabitsScreen:
         self.carnivore_image = pygame.transform.smoothscale(carnivore_image, (max_width, new_h))
 
         # descriptions
-        self.herbivore_desc = "Eats plants and vegetation.\nPeaceful nature."
+        self.herbivore_desc = "Eats plants and vegetation.\nPeaceful nature, but later deadly."
         self.carnivore_desc = "Hunts other organisms.\nAggressive towards others."
 
         self.next_state = "PICKING"

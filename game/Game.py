@@ -15,8 +15,13 @@ from game.GameLogic.NPC_spawner import spawn_npc_outside_view
 
 import random
 
+from game.Level_2.Level_2_Spawner_Carn import spawn_level2_carnivores
+from game.Level_2.Level_2_Spawner_Herb import spawn_level2_herbivores
 from game.Trackers.HealthBar import HealthBar
 from game.Trackers.ProgressBar import ProgressBar
+
+from game.Level_2.Herb_attack_logic import shoot_herbivore
+
 
 def food_collision(player, food):
     return player.rect.colliderect(food.hitbox)
@@ -77,6 +82,7 @@ class Game:
         for _ in range(25):
             spawn_npc_outside_view(self, NPCCarnivore)
 
+
         self.attack_cooldown = 300
         self.last_attack_time = 0
         self.knockback = 50
@@ -115,6 +121,12 @@ class Game:
         self.lvl1_duration = 1500
         # ========================================================
 
+        #herb attack
+        self.herb_attack_damage = 30
+        self.projectiles = pygame.sprite.Group()
+        self.herb_attack_unlocked = False
+        self.herb_attack_cooldown = 500
+        self.herb_attack_last = 0
 
     def handle_events(self, events):
         for event in events:
@@ -229,7 +241,16 @@ class Game:
                         if isinstance(victim, NPCHerbivore) and victim.health <= 0:
                             self.npc_group.remove(victim)
                             self.all_sprites.remove(victim)
-                            spawn_npc_outside_view(self)
+                            if isinstance(victim, NPCHerbivore):
+                                if getattr(victim, "has_level2_upgrade", False):
+                                    spawn_level2_herbivores(self, 1)
+                                else:
+                                    spawn_npc_outside_view(self)
+                            else:
+                                if getattr(victim, "has_level2_upgrade", False):
+                                    spawn_level2_carnivores(self, 1)
+                                else:
+                                    spawn_npc_outside_view(self, NPCCarnivore)
                     break
 
         now = pygame.time.get_ticks()
@@ -284,8 +305,17 @@ class Game:
                     add_xp(self, 3)
                     self.npc_group.remove(enemy)
                     self.all_sprites.remove(enemy)
-                    spawn_npc_outside_view(self)
 
+                    if isinstance(enemy, NPCHerbivore):
+                        if getattr(enemy, "has_level2_upgrade", False):
+                            spawn_level2_herbivores(self, 1)
+                        else:
+                            spawn_npc_outside_view(self)
+                    else:
+                        if getattr(enemy, "has_level2_upgrade", False):
+                            spawn_level2_carnivores(self, 1)
+                        else:
+                            spawn_npc_outside_view(self, NPCCarnivore)
 
         elif can_npc_bite:
             npc = next(n for n in biting_carnivores if now - n.last_attack_time >= n.attack_cooldown)
@@ -305,6 +335,34 @@ class Game:
 
                 if self.player.health <= 0:
                     self.next_state = "END"
+
+        #herb attack
+        self.projectiles.update(dt, self.world_rect)
+        shoot_herbivore(self)
+
+        for proj in list(self.projectiles):
+            hits = pygame.sprite.spritecollide(proj, self.npc_group, dokill=False)
+            for npc in hits:
+                if hasattr(npc, "health") and npc.health > 0:
+                    npc.health -= proj.damage
+                    if npc.health <= 0:
+                        self.npc_group.remove(npc)
+                        self.all_sprites.remove(npc)
+
+                        add_xp(self, 3)
+
+                        if isinstance(npc, NPCHerbivore):
+                            if getattr(npc, "has_level2_upgrade", False):
+                                spawn_level2_herbivores(self, 1)
+                            else:
+                                spawn_npc_outside_view(self)
+                        else:
+                            if getattr(npc, "has_level2_upgrade", False):
+                                spawn_level2_carnivores(self, 1)
+                            else:
+                                spawn_npc_outside_view(self, NPCCarnivore)
+                proj.kill()
+                break
 
 
     def draw(self):
@@ -343,3 +401,7 @@ class Game:
         level_text = font.render(f"Level {self.player.get_level()}", True, (200, 200, 200))
         level_rect = level_text.get_rect(topleft=(20, self.height - 70))
         self.screen.blit(level_text, level_rect)
+
+        for proj in self.projectiles:
+            draw_rect = proj.rect.move(-cam_x, -cam_y)
+            self.screen.blit(proj.image, draw_rect)

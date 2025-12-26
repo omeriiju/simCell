@@ -14,6 +14,9 @@ def random_direction():
 class NPCHerbivore(Entity):
     def __init__(self, x, y):
         super().__init__(x, y, "visuals/phase1/green_0.png")
+
+        self.has_level2_upgrade = False
+
         scale = 0.2
         all_frames = []
 
