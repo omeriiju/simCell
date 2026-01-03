@@ -1,26 +1,21 @@
 import math
 import pygame
-from game.Level_2.Herb_attack import HerbAttack
 from game.Entities.NPCCarnivore import NPCCarnivore
-from game.Entities.NPCHerbivore import NPCHerbivore
 from game.Entities.Herbivore import Herbivore
+from game.Entities.Carnivore import Carnivore
 
-def shoot_herbivore(game, max_dist=200, speed=600):
-    if not getattr(game, "herb_attack_unlocked", False):
-        return
-    if not isinstance(game.player, Herbivore):
-        return
+from game.Level_2.Herb_attack import HerbAttack
 
-    now = pygame.time.get_ticks()
-    if now - game.herb_attack_last < game.herb_attack_cooldown:
-        return
 
-    px, py = game.player.rect.center
+def shoot_npc_herbivore(npc, game, max_dist=200, speed=600):
+    px, py = npc.rect.center
     target = None
     best_d2 = None
 
     for e in game.npc_group:
-        if not isinstance(e, (NPCCarnivore, NPCHerbivore)):
+        if not isinstance(e, NPCCarnivore):
+            continue
+        if e is npc:
             continue
         if getattr(e, "health", 1) <= 0:
             continue
@@ -37,7 +32,17 @@ def shoot_herbivore(game, max_dist=200, speed=600):
             target = e
 
     if target is None:
-        return
+        player = game.player
+        if isinstance(player, (Carnivore, Herbivore)) and getattr(player, "health", 1) > 0:
+            ex, ey = player.rect.center
+            dx = ex - px
+            dy = ey - py
+            d2 = dx * dx + dy * dy
+            if d2 <= max_dist * max_dist:
+                target = player
+
+    if target is None:
+        return False
 
     tx, ty = target.rect.center
     dx = tx - px
@@ -53,7 +58,8 @@ def shoot_herbivore(game, max_dist=200, speed=600):
         vel=(vx, vy),
         damage=damage,
         max_range=max_dist,
-        groups=(game.projectiles,)
+        groups=(game.projectiles,),
     )
-    proj.owner = "player"
-    game.herb_attack_last = now
+    proj.owner = "npc"
+
+    return True

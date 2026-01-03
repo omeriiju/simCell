@@ -46,7 +46,7 @@ class Entity(pygame.sprite.Sprite):
             return 4
         elif self.xp >= 70:
             return 3
-        elif self.xp >= 1:
+        elif self.xp >= 20:
             return 2
         else:
             #begining of the game

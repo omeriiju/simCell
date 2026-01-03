@@ -125,7 +125,7 @@ class Game:
         self.herb_attack_damage = 30
         self.projectiles = pygame.sprite.Group()
         self.herb_attack_unlocked = False
-        self.herb_attack_cooldown = 500
+        self.herb_attack_cooldown = 1250
         self.herb_attack_last = 0
 
     def handle_events(self, events):
@@ -341,6 +341,9 @@ class Game:
         shoot_herbivore(self)
 
         for proj in list(self.projectiles):
+            if getattr(proj, "owner", None) == "npc":
+                continue
+
             hits = pygame.sprite.spritecollide(proj, self.npc_group, dokill=False)
             for npc in hits:
                 if hasattr(npc, "health") and npc.health > 0:
@@ -349,7 +352,8 @@ class Game:
                         self.npc_group.remove(npc)
                         self.all_sprites.remove(npc)
 
-                        add_xp(self, 3)
+                        if getattr(proj, "owner", None) == "player":
+                            add_xp(self, 3)
 
                         if isinstance(npc, NPCHerbivore):
                             if getattr(npc, "has_level2_upgrade", False):
@@ -363,6 +367,17 @@ class Game:
                                 spawn_npc_outside_view(self, NPCCarnivore)
                 proj.kill()
                 break
+
+        for proj in list(self.projectiles):
+            if getattr(proj, "owner", None) == "npc":
+                if self.player.rect.colliderect(proj.rect):
+                    if self.player.health > 0:
+                        self.player.health -= proj.damage
+
+                        if self.player.health <= 0:
+                            self.next_state = "END"
+
+                    proj.kill()
 
 
     def draw(self):

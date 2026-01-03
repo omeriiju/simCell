@@ -13,7 +13,7 @@ class HerbAttack(pygame.sprite.Sprite):
         self.start_pos = self.pos.copy()
 
         self.image = pygame.Surface((8, 8), pygame.SRCALPHA)
-        self.image.fill((120, 255, 120))
+        self.image.fill((103, 154, 140))
         self.rect = self.image.get_rect(center=self.pos)
 
     def update(self, dt, world_rect):

@@ -1,11 +1,10 @@
 import random
 import pygame
 import math
-from .Entity import Entity
+from game.Entities.Entity import Entity
 from game.GameLogic.Food import Meat
-
 from game.Entities.NPCHerbivore import NPCHerbivore
-from ..GameLogic.Food_spawner import spawn_food_outside_view
+from game.GameLogic.Food_spawner import spawn_food_outside_view
 
 def random_direction():
     angle = random.uniform(0, 2 * math.pi)

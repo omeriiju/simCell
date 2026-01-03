@@ -1,11 +1,11 @@
 import random
 import pygame
 import math
-from .Entity import Entity
+
+from game.Entities.Entity import Entity
 from game.GameLogic.Food import Plant
 from game.Entities.Carnivore import Carnivore
-from ..GameLogic.Food_spawner import spawn_food_outside_view
-
+from game.GameLogic.Food_spawner import spawn_food_outside_view
 
 def random_direction():
     angle = random.uniform(0, 2 * math.pi)
@@ -16,6 +16,8 @@ class NPCHerbivore(Entity):
         super().__init__(x, y, "visuals/phase1/green_0.png")
 
         self.has_level2_upgrade = False
+        self.herb_attack_cooldown = 2000
+        self.last_herb_attack = 0
 
         scale = 0.2
         all_frames = []
@@ -145,5 +147,12 @@ class NPCHerbivore(Entity):
                 food_group.remove(food)
                 spawn_food_outside_view(game, Plant)
                 break
+
+        if self.has_level2_upgrade:
+            now = pygame.time.get_ticks()
+            if now - self.last_herb_attack >= self.herb_attack_cooldown:
+                from game.Level_2.NPC_Herb_attack_logic import shoot_npc_herbivore
+                if shoot_npc_herbivore(self, game):
+                   self.last_herb_attack = now
 
         self.rect.clamp_ip(world_rect)
